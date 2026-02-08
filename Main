@@ -1,0 +1,281 @@
+class Book:
+    def __init__(self, title, author):
+        self.title = title
+        self.author = author
+        self.status = "доступна" 
+    
+    def __str__(self):
+        return f"'{self.title}' - {self.author} ({self.status})"
+
+
+class User:
+
+    def __init__(self, name):
+        self.name = name
+        self.my_books = [] 
+
+
+class Librarian:
+
+    def __init__(self, name):
+        self.name = name
+
+
+def load_books():
+
+    books = []
+    try:
+        with open("books.txt", "r", encoding="utf-8") as file:
+            lines = file.readlines()
+            for i in range(0, len(lines), 3):
+                if i + 2 < len(lines):
+                    title = lines[i].strip()
+                    author = lines[i + 1].strip()
+                    status = lines[i + 2].strip()
+                    book = Book(title, author)
+                    book.status = status
+                    books.append(book)
+    except:
+        print("Файл с книгами не найден, поэтому будем начинать с нового")
+    return books
+
+
+def save_books(books):
+    with open("books.txt", "w", encoding="utf-8") as file:
+        for book in books:
+            file.write(f"{book.title}\n")
+            file.write(f"{book.author}\n")
+            file.write(f"{book.status}\n")
+
+
+def load_users():
+    users = []
+    try:
+        with open("users.txt", "r", encoding="utf-8") as file:
+            lines = file.readlines()
+            i = 0
+            while i < len(lines):
+                name = lines[i].strip()
+                user = User(name)
+                i += 1
+                if i < len(lines):
+                    book_count = int(lines[i].strip())
+                    i += 1
+                    for _ in range(book_count):
+                        if i < len(lines):
+                            book_title = lines[i].strip()
+                            user.my_books.append(book_title)
+                            i += 1
+                
+                users.append(user)
+    except:
+        print("Файл с пользователями не найден, начнем с пустого списка")
+    return users
+
+
+def save_users(users, books):
+    with open("users.txt", "w", encoding="utf-8") as file:
+        for user in users:
+            file.write(f"{user.name}\n")
+            user_book_count = 0
+            for book_title in user.my_books:
+                for book in books:
+                    if book.title == book_title and book.status == "выдана":
+                        user_book_count += 1
+                        break
+            
+            file.write(f"{user_book_count}\n")
+
+            for book_title in user.my_books:
+                for book in books:
+                    if book.title == book_title and book.status == "выдана":
+                        file.write(f"{book_title}\n")
+                        break
+
+def librarian_menu(books, users):
+    while True:
+        print("МЕНЮ БИБЛИОТЕКАРЯ")
+        print("1. Добавить новую книгу")
+        print("2. Удалить книгу")
+        print("3. Зарегистрировать нового пользователя")
+        print("4. Просмотреть всех пользователей")
+        print("5. Просмотреть все книги")
+        print("6. Выйти")  
+        choice = input("Ваш выбор: ")
+        
+        if choice == "1":
+            title = input("Название книги: ")
+            author = input("Автор книги: ")
+            new_book = Book(title, author)
+            books.append(new_book)
+            print(f"Книга '{title}' добавлена!")
+        
+        elif choice == "2":
+            title = input("Название книги для удаления: ")
+            found = False
+            for book in books:
+                if book.title == title:
+                    books.remove(book)
+                    print(f"Книга '{title}' удалена!")
+                    found = True
+                    break
+            if not found:
+                print("Книга не найдена!")
+        
+        elif choice == "3":
+            name = input("Имя нового пользователя: ")
+            new_user = User(name)
+            users.append(new_user)
+            print(f"Пользователь '{name}' зарегистрирован!")
+        
+        elif choice == "4":
+            if not users:
+                print("Нет зарегистрированных пользователей")
+            else:
+                print("\nСписок пользователей:")
+                for i, user in enumerate(users, 1):
+                    print(f"{i}. {user.name} - книг на руках: {len(user.my_books)}")
+        
+        elif choice == "5":
+            if not books:
+                print("В библиотеке нет книг")
+            else:
+                print("\nСписок всех книг:")
+                for i, book in enumerate(books, 1):
+                    print(f"{i}. {book}")
+        
+        elif choice == "6":
+            break
+        
+        else:
+            print("Неверный выбор!")
+
+def user_menu(user, books, users):
+    while True:
+        print(f"МЕНЮ ПОЛЬЗОВАТЕЛЯ: {user.name}")
+        print("1. Просмотреть доступные книги")
+        print("2. Взять книгу")
+        print("3. Вернуть книгу")
+        print("4. Просмотреть мои книги")
+        print("5. Выйти")
+   
+        choice = input("Ваш выбор: ")
+        
+        if choice == "1":
+            available_books = []
+            for book in books:
+                if book.status == "доступна":
+                    available_books.append(book)
+            
+            if not available_books:
+                print("Нет доступных книг")
+            else:
+                print("\nДоступные книги:")
+                for i, book in enumerate(available_books, 1):
+                    print(f"{i}. '{book.title}' - {book.author}")
+        
+        elif choice == "2":
+            title = input("Название книги для взятия: ")
+
+            book_to_borrow = None
+            for book in books:
+                if book.title == title:
+                    book_to_borrow = book
+                    break           
+            if book_to_borrow is None:
+                print("Книга не найдена!")
+            elif book_to_borrow.status == "выдана":
+                print("Эта книга уже выдана!")
+            else:
+                book_to_borrow.status = "выдана"
+                user.my_books.append(title)
+                print(f"Вы взяли книгу '{title}'!")
+        
+        elif choice == "3":
+            if not user.my_books:
+                print("У вас нет книг для возврата")
+            else:
+                print("\nВаши книги:")
+                for i, book_title in enumerate(user.my_books, 1):
+                    print(f"{i}. {book_title}")
+                
+                title = input("Название книги для возврата: ")
+                
+                if title in user.my_books:
+                    user.my_books.remove(title)
+
+                    for book in books:
+                        if book.title == title:
+                            book.status = "доступна"
+                            break
+                    
+                    print(f"Вы вернули книгу '{title}'!")
+                else:
+                    print("У вас нет такой книги!")
+        
+        elif choice == "4":
+            if not user.my_books:
+                print("У вас нет взятых книг")
+            else:
+                print("\nВаши книги:")
+                for i, book_title in enumerate(user.my_books, 1):
+                    print(f"{i}. {book_title}")
+        
+        elif choice == "5":
+            break
+        
+        else:
+            print("Неверный выбор!")
+
+def main():
+    print("БИБЛИОТЕКА")
+
+    books = load_books()
+    users = load_users()
+
+    librarian = Librarian("Администратор")
+    
+    while True:
+        print("\nВыберите роль для входа:")
+        print("1. Библиотекарь")
+        print("2. Пользователь")
+        print("3. Выйти из программы")
+        
+        role = input("Ваш выбор (1-3): ")
+        
+        if role == "1":
+            password = input("Введите пароль (по умолчанию: 123): ")
+            if password == "123":
+                librarian_menu(books, users)
+            else:
+                print("Неверный пароль!")
+        
+        elif role == "2":
+            name = input("Введите ваше имя: ")
+            current_user = None
+            for user in users:
+                if user.name == name:
+                    current_user = user
+                    break
+            if current_user is None:
+                print("Пользователь не найден!")
+                register = input("Зарегистрироваться? (да/нет): ")
+                if register.lower() == "да":
+                    new_user = User(name)
+                    users.append(new_user)
+                    current_user = new_user
+                    print(f"Добро пожаловать, {name}!")
+                    user_menu(current_user, books, users)
+            else:
+                user_menu(current_user, books, users)
+        
+        elif role == "3":
+            save_books(books)
+            save_users(users, books)
+            print("Данные сохранены.")
+            break
+        
+        else:
+            print("Неверный выбор!")
+if __name__ == "__main__":
+    main()
